@@ -13,6 +13,10 @@ logger:
 api:
   password: ""
   reboot_timeout: 0s
+  services:
+    - service: mhz19_calibrate_zero
+      then:
+        - mhz19.calibrate_zero: mhz19_id
 ota:
   password: ""
 
@@ -43,7 +47,22 @@ i2c:
     sda: GPIO21
     #    frequency: 100kHz
 
+uart:
+ rx_pin: GPIO3
+ tx_pin: GPIO1
+ baud_rate: 9600
+
 sensor:
+  - platform: mhz19
+    id: mhz19_id
+    co2:
+      name: "MH-Z19B CO2"
+      id: co2
+    temperature:
+      name: "MH-Z19B Temperature"      
+      id: mhz_temp
+    update_interval: 10s
+    automatic_baseline_calibration: false    
   - platform: bmp280
     i2c_id: bus_a
     temperature:
