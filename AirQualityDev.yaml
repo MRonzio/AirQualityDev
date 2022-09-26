@@ -45,15 +45,26 @@ i2c:
   - id: bus_a
     scl: GPIO22
     sda: GPIO21
+  - id: bus_b
+    scl: GPIO14
+    sda: GPIO27
+
     #    frequency: 100kHz
 
 uart:
- rx_pin: GPIO3
- tx_pin: GPIO1
- baud_rate: 9600
+  - id: uart_1
+    rx_pin: GPIO3
+    tx_pin: GPIO1
+    baud_rate: 9600
+  - id: uart_2
+    rx_pin: GPIO16
+    tx_pin: GPIO17
+    baud_rate: 9600
 
 sensor:
+  # MHZ19C CO2 sensor
   - platform: mhz19
+    uart_id: uart_1
     id: mhz19_id
     co2:
       name: "MH-Z19B CO2"
@@ -62,7 +73,9 @@ sensor:
       name: "MH-Z19B Temperature"      
       id: mhz_temp
     update_interval: 10s
-    automatic_baseline_calibration: false    
+    automatic_baseline_calibration: false
+  
+  # BMP280 temp/pressure sensor
   - platform: bmp280
     i2c_id: bus_a
     temperature:
@@ -73,13 +86,10 @@ sensor:
       name: "BMP280 Pressure"
       oversampling: 1x
       id: press
-      #    humidity:
-      #name: "BME280 Humidity" ---- BMP does not have it!
-      #oversampling: 1x
-      #id: hum
     address: 0x76
     update_interval: 60s
   
+  # DHT11 temp/humidity sensor
   - platform: dht
     pin: GPIO13
     temperature:
@@ -90,3 +100,66 @@ sensor:
       id: dht_hum
     model: DHT11
     update_interval: 60s
+  
+  # Particulate Matter
+  - platform: pmsx003
+    uart_id: uart_2
+    type: PMSX003
+    pm_1_0:
+      name: "Particulate Matter <1.0µm Concentration"
+    pm_2_5:
+      name: "Particulate Matter <2.5µm Concentration"
+    pm_10_0:
+      name: "Particulate Matter <10.0µm Concentration"
+    update_interval: 60000ms
+
+  # VoC and CO2
+  - platform: sgp30
+    i2c_id: bus_b
+    eco2:
+      name: "Workshop eCO2"
+      accuracy_decimals: 1
+    tvoc:
+      name: "Workshop TVOC"
+      accuracy_decimals: 1
+    store_baseline: yes
+    address: 0x58
+    update_interval: 1s
+
+# E-ink optional screen
+# Example configuration entry
+font:
+  - file: 'fonts/Alegreya-VariableFont_wght.ttf'
+    id: font1
+    size: 35
+
+  - file: 'fonts/GoogleSans-Bold.ttf'
+    id: font2
+    size: 50
+
+  - file: 'fonts/materialdesignicons-webfont.ttf'
+    id: font_icons
+    size: 75
+    glyphs:
+      - "\U000F050F" # temperature
+
+spi:
+  clk_pin: GPIO18
+  mosi_pin: GPIO23
+  miso_pin: GPIO19
+
+display:
+  - platform: waveshare_epaper
+    cs_pin: GPIO26
+    dc_pin: GPIO25
+    busy_pin: GPIO5
+    reset_pin: GPIO18
+    model: 2.70in
+    reset_duration: 2ms
+    lambda: |-
+      it.print(0, 0, id(font1), "Hello World!");
+      it.print(0, 40, id(font2), "temp:");
+      it.printf(10, 80, id(font2), "%.1f °C", id(temp).state);
+      it.print(180, 80, id(font_icons), "\U000F050F");
+
+    update_interval: 30s
